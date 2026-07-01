@@ -5,6 +5,7 @@ function App() {
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [agentState, setAgentState] = useState("ROUTER"); // ROUTER, SALES, CLAIMS
+  const agentStateRef = useRef("ROUTER");
   const [messages, setMessages] = useState([
     { role: 'ai', text: 'Hello! Welcome to Aurora Audio. How can I help you today?' }
   ]);
@@ -55,10 +56,10 @@ function App() {
   const processSimulatedAIResponse = (userText) => {
     const textLower = userText.toLowerCase();
     let aiResponse = "";
-    let newState = agentState;
+    let newState = agentStateRef.current;
 
     // Simulated LLM Routing Logic
-    if (agentState === "ROUTER") {
+    if (agentStateRef.current === "ROUTER") {
       if (textLower.includes("buy") || textLower.includes("price") || textLower.includes("headphones")) {
         aiResponse = "Sure thing, let me connect you to our Sales department. One moment...";
         newState = "SALES";
@@ -68,13 +69,13 @@ function App() {
       } else {
         aiResponse = "I didn't quite catch that. Are you looking to buy headphones, or do you need support with an existing product?";
       }
-    } else if (agentState === "SALES") {
+    } else if (agentStateRef.current === "SALES") {
       if (textLower.includes("too expensive") || textLower.includes("high")) {
         aiResponse = "I understand $599 is an investment. We do offer the Aurora Echo for $299 which has identical audio drivers, just slightly less battery life. How does that sound?";
       } else {
         aiResponse = "Our flagship Aurora Zenith features spatial audio and a 60-hour battery. I can process your payment right now if you're ready.";
       }
-    } else if (agentState === "CLAIMS") {
+    } else if (agentStateRef.current === "CLAIMS") {
       if (textLower.includes("lawyer") || textLower.includes("fire") || textLower.includes("burn")) {
         aiResponse = "I completely understand your frustration. Due to the nature of this issue, I am immediately escalating this to a human legal specialist who will assist you right away.";
       } else {
@@ -82,6 +83,7 @@ function App() {
       }
     }
 
+    agentStateRef.current = newState;
     setAgentState(newState);
     setMessages(prev => [...prev, { role: 'ai', text: aiResponse }]);
     speakResponse(aiResponse);
