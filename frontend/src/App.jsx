@@ -1,7 +1,28 @@
 import { useState, useEffect, useRef } from 'react'
 import './index.css'
+import Login from './Login'
+import { supabase, isAuthConfigured } from './lib/supabase'
 
 function App() {
+  const [session, setSession] = useState(null)
+  const [authReady, setAuthReady] = useState(!isAuthConfigured)
+
+  // supabase session lifecycle
+  useEffect(() => {
+    if (!isAuthConfigured) {
+      console.warn('Supabase env vars not set -- running in open demo mode without auth.')
+      return
+    }
+    supabase.auth.getSession().then(({ data }) => {
+      setSession(data.session)
+      setAuthReady(true)
+    })
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, newSession) => {
+      setSession(newSession)
+    })
+    return () => listener.subscription.unsubscribe()
+  }, [])
+
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [agentState, setAgentState] = useState("ROUTER"); // ROUTER, SALES, CLAIMS
@@ -129,11 +150,32 @@ function App() {
     }
   };
 
+  if (!authReady) {
+    return <div className="app-container" />
+  }
+
+  if (isAuthConfigured && !session) {
+    return (
+      <div className="app-container">
+        <header className="app-header">
+          <h1 className="app-title">Enterprise Voice AI</h1>
+          <p className="app-subtitle">Real-time LLM Router & Conversational Engine Simulator</p>
+        </header>
+        <Login />
+      </div>
+    )
+  }
+
   return (
     <div className="app-container">
       <header className="app-header">
         <h1 className="app-title">Enterprise Voice AI</h1>
         <p className="app-subtitle">Real-time LLM Router & Conversational Engine Simulator</p>
+        {isAuthConfigured && session && (
+          <button className="signout-btn" onClick={() => supabase.auth.signOut()}>
+            Sign out {session.user?.email ? `(${session.user.email})` : ''}
+          </button>
+        )}
       </header>
 
       <main className="main-grid">

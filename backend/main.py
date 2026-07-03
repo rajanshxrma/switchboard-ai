@@ -1,9 +1,11 @@
-from fastapi import FastAPI, Request, WebSocket
+from fastapi import FastAPI, Depends, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
 from database import init_db
 from services.twilio_ws import TwilioVoiceConnection
+from services.analytics import get_dashboard_stats
+from services.auth import get_current_user
 
-app = FastAPI(title="Enterprise Voice AI", version="1.0.0")
+app = FastAPI(title="Enterprise Voice AI", version="1.1.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -25,6 +27,16 @@ def startup_event():
 @app.get("/health")
 def health_check():
     return {"status": "ok", "service": "voice-ai-server"}
+
+@app.get("/api/stats")
+def dashboard_stats(user: dict = Depends(get_current_user)):
+    """Aggregated call metrics for the dashboard. Requires a valid Supabase session token."""
+    return get_dashboard_stats()
+
+@app.get("/api/me")
+def whoami(user: dict = Depends(get_current_user)):
+    """Returns the authenticated user's identity. Handy for smoke-testing auth."""
+    return user
 
 @app.websocket("/ws/twilio")
 async def websocket_endpoint(websocket: WebSocket):
