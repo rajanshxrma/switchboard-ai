@@ -1,0 +1,40 @@
+# pr gate: both jobs must pass before merge (enforced via branch protection)
+name: ci
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  backend-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: install deps
+        run: |
+          cd backend
+          pip install -r requirements.txt
+          pip install pytest httpx
+      - name: run tests
+        run: |
+          cd backend
+          pytest tests/ -v
+
+  frontend-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: lint and build
+        run: |
+          cd frontend
+          npm ci
+          npm run lint
+          npm run build
